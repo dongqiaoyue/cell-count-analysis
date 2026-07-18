@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.db-journal
+.streamlit/
+.DS_Store
+
+# assignment prompt PDFs — not part of the solution
+*.pdf
