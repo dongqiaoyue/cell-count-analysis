@@ -67,7 +67,7 @@ with tab2:
     if samples_sel:
         table = table[table["sample"].isin(samples_sel)]
     table["percentage"] = table["percentage"].round(2)
-    st.dataframe(table, use_container_width=True, height=430)
+    st.dataframe(table, width="stretch", height=430)
     st.download_button(
         "Download CSV",
         table.to_csv(index=False),
@@ -96,7 +96,7 @@ with tab3:
         labels={"percentage": "relative frequency (%)"},
         category_orders={"population": POPULATIONS},
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig)
 
     rows = []
     for pop in POPULATIONS:
@@ -120,7 +120,7 @@ with tab3:
         row["p_value"] = f"{row['p_value']:.3e}"
 
     st.markdown("**Mann–Whitney U test (two-sided), Benjamini–Hochberg corrected**")
-    st.dataframe(pd.DataFrame(rows), use_container_width=True)
+    st.dataframe(pd.DataFrame(rows), width="stretch")
     st.caption(
         "Five populations are tested on the same cohort, so raw p-values are "
         "inflated. Only populations flagged ✅ survive false-discovery-rate "
