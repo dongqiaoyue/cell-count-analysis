@@ -1,5 +1,5 @@
 """
-analysis.py -- Parts 2 and 3.
+analysis.py -- Parts 2, 3 and 4.
 
 Reads cell_counts.db (created by load_data.py), computes every required
 output table / plot, and writes them to ./outputs/.
@@ -11,6 +11,8 @@ Outputs:
     outputs/cell_frequencies.csv       Part 2 summary table
     outputs/part3_boxplot.png          Part 3 responder vs non-responder boxplots
     outputs/part3_statistics.csv       Part 3 Mann-Whitney U test per population
+    outputs/part4_baseline_subset.csv  Part 4 filtered baseline samples
+    outputs/part4_counts.txt           Part 4 breakdown counts + starred answer
 """
 
 import os
@@ -106,6 +108,72 @@ def responder_comparison(conn: sqlite3.Connection, freq: pd.DataFrame):
     return stats
 
 
+# ---------------------------------------------------------------------------
+# Part 4 -- baseline subset analysis
+# ---------------------------------------------------------------------------
+def baseline_subset(conn: sqlite3.Connection):
+    """Melanoma PBMC baseline (t=0) samples from miraclib-treated patients."""
+    subset = pd.read_sql(
+        """
+        SELECT s.sample, sub.subject, sub.project, sub.response, sub.sex,
+               s.time_from_treatment_start
+        FROM samples s
+        JOIN subjects sub ON s.subject = sub.subject
+        WHERE sub.condition = 'melanoma'
+          AND sub.treatment = 'miraclib'
+          AND s.sample_type = 'PBMC'
+          AND s.time_from_treatment_start = 0
+        """,
+        conn,
+    )
+
+    by_project = subset.groupby("project")["sample"].count()
+    by_response = subset.drop_duplicates("subject").groupby("response")["subject"].count()
+    by_sex = subset.drop_duplicates("subject").groupby("sex")["subject"].count()
+
+    lines = ["Part 4 -- Melanoma PBMC baseline (t=0), miraclib-treated", ""]
+    lines.append(f"Total samples in subset: {len(subset)}")
+    lines.append(f"Unique subjects: {subset['subject'].nunique()}")
+    lines.append("")
+    lines.append("Samples per project:")
+    for k, v in by_project.items():
+        lines.append(f"  {k}: {v}")
+    lines.append("")
+    lines.append("Subjects by response:")
+    for k, v in by_response.items():
+        lines.append(f"  {k}: {v}")
+    lines.append("")
+    lines.append("Subjects by sex:")
+    for k, v in by_sex.items():
+        lines.append(f"  {k}: {v}")
+
+    # Starred required answer: Melanoma males, ALL sample & treatment types,
+    # responders, time=0 -> average raw B-cell count (XXX.XX).
+    starred = pd.read_sql(
+        """
+        SELECT cc.count AS b_cell
+        FROM cell_counts cc
+        JOIN samples s   ON cc.sample = s.sample
+        JOIN subjects sub ON s.subject = sub.subject
+        WHERE cc.population = 'b_cell'
+          AND sub.condition = 'melanoma'
+          AND sub.sex = 'M'
+          AND sub.response = 'yes'
+          AND s.time_from_treatment_start = 0
+        """,
+        conn,
+    )
+    avg_b = starred["b_cell"].mean()
+    lines.append("")
+    lines.append(
+        "Starred question -- Melanoma males (all sample & treatment types), "
+        "responders at time=0, average B-cell count:"
+    )
+    lines.append(f"  {avg_b:.2f}   (n = {len(starred)} samples)")
+
+    return subset, "\n".join(lines)
+
+
 def main() -> None:
     os.makedirs(OUT_DIR, exist_ok=True)
     conn = connect()
@@ -116,11 +184,18 @@ def main() -> None:
     stats = responder_comparison(conn, freq)
     stats.to_csv(os.path.join(OUT_DIR, "part3_statistics.csv"), index=False)
 
+    subset, report = baseline_subset(conn)
+    subset.to_csv(os.path.join(OUT_DIR, "part4_baseline_subset.csv"), index=False)
+    with open(os.path.join(OUT_DIR, "part4_counts.txt"), "w") as f:
+        f.write(report + "\n")
+
     conn.close()
 
     print("Part 2: cell_frequencies.csv written ({} rows).".format(len(freq)))
     print("Part 3: statistics ->")
     print(stats.to_string(index=False))
+    print("\nPart 4:")
+    print(report)
 
 
 if __name__ == "__main__":
