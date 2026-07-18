@@ -80,20 +80,31 @@ per-population boxplots (`outputs/part3_boxplot.png`) and a two-sided
 non-parametric test is used because relative-frequency distributions are not
 guaranteed normal and the test is robust to that.
 
+Five populations are tested against the same cohort, so the raw p-values are
+inflated by multiple comparisons. Reported alongside each is a
+**Benjamini–Hochberg** adjusted q-value, which controls the false discovery
+rate; only q-values are used to declare a hit.
+
 Result (993 responder vs 975 non-responder samples):
 
-| population | median resp. | median non-resp. | p-value | significant |
-|------------|-------------|------------------|---------|-------------|
-| b_cell | 9.43 | 9.79 | 5.6e-02 | no (borderline) |
-| cd8_t_cell | 24.73 | 24.60 | 6.4e-01 | no |
-| **cd4_t_cell** | **30.22** | **29.66** | **1.3e-02** | **yes** |
-| nk_cell | 14.51 | 14.80 | 1.2e-01 | no |
-| monocyte | 19.61 | 19.94 | 1.6e-01 | no |
+| population | median resp. | median non-resp. | p-value | q-value (BH) | significant |
+|------------|-------------|------------------|---------|--------------|-------------|
+| b_cell | 9.43 | 9.79 | 5.6e-02 | 1.4e-01 | no |
+| cd8_t_cell | 24.73 | 24.60 | 6.4e-01 | 6.4e-01 | no |
+| **cd4_t_cell** | **30.22** | **29.66** | **1.3e-02** | **6.7e-02** | no |
+| nk_cell | 14.51 | 14.80 | 1.2e-01 | 2.0e-01 | no |
+| monocyte | 19.61 | 19.94 | 1.6e-01 | 2.0e-01 | no |
 
-**CD4 T cells** show a statistically significant difference (p ≈ 0.013):
-responders carry a higher CD4 T-cell relative frequency, making it the leading
-candidate biomarker for miraclib response. B cells trend lower in responders but
-fall just short of significance (p ≈ 0.056).
+**CD4 T cells are the leading candidate biomarker**, but the evidence is
+suggestive rather than conclusive. Responders carry a higher CD4 T-cell relative
+frequency and the difference is nominally significant (p ≈ 0.013); after
+correcting for the five tests it does not clear the 0.05 threshold (q ≈ 0.067).
+B cells trend lower in responders (p ≈ 0.056, q ≈ 0.14) and are the second
+candidate. The honest read: CD4 is worth prospective validation in an
+independent cohort, and no population is confirmed on this data alone. The
+effect sizes are also small relative to the spread — a difference in medians of
+roughly half a percentage point — so a larger cohort, not just a different test,
+is what would settle it.
 
 **Part 4 — baseline subset** (melanoma / PBMC / miraclib / time=0):
 `outputs/part4_baseline_subset.csv` plus breakdown counts in

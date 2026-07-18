@@ -14,7 +14,7 @@ import sqlite3
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from scipy.stats import mannwhitneyu
+from scipy.stats import false_discovery_control, mannwhitneyu
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "cell_counts.db")
@@ -108,15 +108,23 @@ with tab3:
                 "population": pop,
                 "median_responder": round(r.median(), 2),
                 "median_nonresponder": round(n.median(), 2),
-                "p_value": f"{p:.3e}",
-                "significant (p<0.05)": "✅" if p < 0.05 else "",
+                "p_value": p,
             }
         )
-    st.markdown("**Mann–Whitney U test (two-sided)**")
+
+    # Five populations tested on one cohort -> correct for multiple testing.
+    q = false_discovery_control([r["p_value"] for r in rows], method="bh")
+    for row, qv in zip(rows, q):
+        row["q_value (BH)"] = f"{qv:.3e}"
+        row["significant (FDR<0.05)"] = "✅" if qv < 0.05 else ""
+        row["p_value"] = f"{row['p_value']:.3e}"
+
+    st.markdown("**Mann–Whitney U test (two-sided), Benjamini–Hochberg corrected**")
     st.dataframe(pd.DataFrame(rows), use_container_width=True)
     st.caption(
-        "Populations flagged ✅ differ significantly between responders and "
-        "non-responders and are the candidate predictors of miraclib response."
+        "Five populations are tested on the same cohort, so raw p-values are "
+        "inflated. Only populations flagged ✅ survive false-discovery-rate "
+        "correction and qualify as candidate predictors of miraclib response."
     )
 
 # --------------------------------------------------------------------------

@@ -23,13 +23,22 @@ import matplotlib
 matplotlib.use("Agg")  # headless / Codespaces safe
 import matplotlib.pyplot as plt
 import pandas as pd
-from scipy.stats import mannwhitneyu
+from scipy.stats import false_discovery_control, mannwhitneyu
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "cell_counts.db")
 OUT_DIR = os.path.join(BASE_DIR, "outputs")
 
 POPULATIONS = ["b_cell", "cd8_t_cell", "cd4_t_cell", "nk_cell", "monocyte"]
+
+
+def _apply_fdr(rows, alpha: float = 0.05):
+    """Add Benjamini-Hochberg adjusted q-values to a list of stat rows."""
+    q = false_discovery_control([r["p_value"] for r in rows], method="bh")
+    for row, qv in zip(rows, q):
+        row["q_value_bh"] = qv
+        row["significant_fdr_0.05"] = bool(qv < alpha)
+    return rows
 
 
 def boxplot(ax, data, labels):
@@ -103,6 +112,11 @@ def responder_comparison(conn: sqlite3.Connection, freq: pd.DataFrame):
             }
         )
 
+    # Five populations are tested on the same cohort, so the nominal p-values
+    # are inflated. Benjamini-Hochberg controls the false discovery rate; a
+    # population is only reported as a real hit if it survives correction.
+    stats_rows = _apply_fdr(stats_rows)
+
     fig.suptitle(
         "Melanoma / miraclib / PBMC: cell population frequency by response",
         fontsize=14,
@@ -112,7 +126,8 @@ def responder_comparison(conn: sqlite3.Connection, freq: pd.DataFrame):
     plt.close(fig)
 
     stats = pd.DataFrame(stats_rows)
-    stats["p_value"] = stats["p_value"].map(lambda x: f"{x:.3e}")
+    for col in ("p_value", "q_value_bh"):
+        stats[col] = stats[col].map(lambda x: f"{x:.3e}")
     return stats
 
 
