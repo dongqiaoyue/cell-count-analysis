@@ -138,19 +138,23 @@ with tab4:
         & (full["sample_type"] == "PBMC")
         & (full["time_from_treatment_start"] == 0)
     ]
+    # All three breakdowns at one grain (per sample) so they stay comparable.
     samp = sub.drop_duplicates("sample")
-    subj = sub.drop_duplicates("subject")
 
     c1, c2, c3 = st.columns(3)
     with c1:
         st.markdown("**Samples per project**")
         st.dataframe(samp["project"].value_counts().rename("samples"))
     with c2:
-        st.markdown("**Subjects by response**")
-        st.dataframe(subj["response"].value_counts().rename("subjects"))
+        st.markdown("**Samples by response**")
+        st.dataframe(samp["response"].value_counts().rename("samples"))
     with c3:
-        st.markdown("**Subjects by sex**")
-        st.dataframe(subj["sex"].value_counts().rename("subjects"))
+        st.markdown("**Samples by sex**")
+        st.dataframe(samp["sex"].value_counts().rename("samples"))
+    st.caption(
+        f"{len(samp)} baseline samples from {samp['subject'].nunique()} subjects "
+        "— one baseline sample per subject, so sample and subject counts coincide."
+    )
 
     starred = full[
         (full["condition"] == "melanoma")

@@ -108,10 +108,13 @@ is what would settle it.
 
 **Part 4 — baseline subset** (melanoma / PBMC / miraclib / time=0):
 `outputs/part4_baseline_subset.csv` plus breakdown counts in
-`outputs/part4_counts.txt`:
-- 656 samples — **prj1: 384, prj3: 272**
-- Subjects by response — **responders 331, non-responders 325**
-- Subjects by sex — **M 344, F 312**
+`outputs/part4_counts.txt`. All three breakdowns are reported at the same grain
+— one count per sample — so they are comparable and each sums to the subset
+size. Here every subject contributes exactly one baseline sample (656 samples
+from 656 subjects), so sample- and subject-level counts coincide.
+- Samples per project — **prj1: 384, prj3: 272**
+- Samples by response — **responders 331, non-responders 325**
+- Samples by sex — **M 344, F 312**
 
 **Starred question** — average B-cell count for melanoma males (all sample &
 treatment types), responders, at time=0: **10206.15** (n=485 samples).

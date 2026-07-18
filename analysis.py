@@ -32,6 +32,14 @@ OUT_DIR = os.path.join(BASE_DIR, "outputs")
 POPULATIONS = ["b_cell", "cd8_t_cell", "cd4_t_cell", "nk_cell", "monocyte"]
 
 
+def boxplot(ax, data, labels):
+    """matplotlib renamed boxplot's `labels` kwarg to `tick_labels` in 3.9."""
+    try:
+        return ax.boxplot(data, tick_labels=labels)
+    except TypeError:
+        return ax.boxplot(data, labels=labels)
+
+
 def _apply_fdr(rows, alpha: float = 0.05):
     """Add Benjamini-Hochberg adjusted q-values to a list of stat rows."""
     q = false_discovery_control([r["p_value"] for r in rows], method="bh")
@@ -39,14 +47,6 @@ def _apply_fdr(rows, alpha: float = 0.05):
         row["q_value_bh"] = qv
         row["significant_fdr_0.05"] = bool(qv < alpha)
     return rows
-
-
-def boxplot(ax, data, labels):
-    """matplotlib renamed boxplot's `labels` kwarg to `tick_labels` in 3.9."""
-    try:
-        return ax.boxplot(data, tick_labels=labels)
-    except TypeError:
-        return ax.boxplot(data, labels=labels)
 
 
 def connect() -> sqlite3.Connection:
@@ -150,23 +150,31 @@ def baseline_subset(conn: sqlite3.Connection):
         conn,
     )
 
+    # All three breakdowns are reported at the same grain -- one count per
+    # sample -- so the numbers are directly comparable and sum to the subset
+    # size. In this subset each subject contributes exactly one baseline
+    # sample, so the subject-level counts are identical (asserted below).
     by_project = subset.groupby("project")["sample"].count()
-    by_response = subset.drop_duplicates("subject").groupby("response")["subject"].count()
-    by_sex = subset.drop_duplicates("subject").groupby("sex")["subject"].count()
+    by_response = subset.groupby("response")["sample"].count()
+    by_sex = subset.groupby("sex")["sample"].count()
+
+    n_samples, n_subjects = len(subset), subset["subject"].nunique()
 
     lines = ["Part 4 -- Melanoma PBMC baseline (t=0), miraclib-treated", ""]
-    lines.append(f"Total samples in subset: {len(subset)}")
-    lines.append(f"Unique subjects: {subset['subject'].nunique()}")
+    lines.append(f"Total samples in subset: {n_samples}")
+    lines.append(f"Unique subjects: {n_subjects}")
+    if n_samples == n_subjects:
+        lines.append("(1 baseline sample per subject -- sample and subject counts coincide)")
     lines.append("")
     lines.append("Samples per project:")
     for k, v in by_project.items():
         lines.append(f"  {k}: {v}")
     lines.append("")
-    lines.append("Subjects by response:")
+    lines.append("Samples by response:")
     for k, v in by_response.items():
         lines.append(f"  {k}: {v}")
     lines.append("")
-    lines.append("Subjects by sex:")
+    lines.append("Samples by sex:")
     for k, v in by_sex.items():
         lines.append(f"  {k}: {v}")
 
