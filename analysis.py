@@ -32,6 +32,14 @@ OUT_DIR = os.path.join(BASE_DIR, "outputs")
 POPULATIONS = ["b_cell", "cd8_t_cell", "cd4_t_cell", "nk_cell", "monocyte"]
 
 
+def boxplot(ax, data, labels):
+    """matplotlib renamed boxplot's `labels` kwarg to `tick_labels` in 3.9."""
+    try:
+        return ax.boxplot(data, tick_labels=labels)
+    except TypeError:
+        return ax.boxplot(data, labels=labels)
+
+
 def connect() -> sqlite3.Connection:
     if not os.path.exists(DB_PATH):
         raise SystemExit("cell_counts.db not found -- run `python load_data.py` first.")
@@ -77,7 +85,7 @@ def responder_comparison(conn: sqlite3.Connection, freq: pd.DataFrame):
         resp = sub[sub["response"] == "yes"]["percentage"]
         nonr = sub[sub["response"] == "no"]["percentage"]
 
-        ax.boxplot([resp, nonr], labels=["responder", "non-responder"])
+        boxplot(ax, [resp, nonr], ["responder", "non-responder"])
         ax.set_title(pop)
         ax.set_ylabel("relative frequency (%)")
 
