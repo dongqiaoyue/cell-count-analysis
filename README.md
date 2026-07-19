@@ -32,11 +32,11 @@ outputs/         Generated tables and plots (committed for reference)
 
 Third-normal-form design with three tables:
 
-| Table | Grain | Key columns |
-|-------|-------|-------------|
-| `subjects` | one row per patient | `subject` (PK), project, condition, age, sex, treatment, response |
-| `samples` | one row per biological sample | `sample` (PK), `subject` (FK), sample_type, time_from_treatment_start |
-| `cell_counts` | one row per (sample, population) | (`sample`, `population`) PK, count |
+| Table           | Grain                            | Key columns                                                               |
+| --------------- | -------------------------------- | ------------------------------------------------------------------------- |
+| `subjects`    | one row per patient              | `subject` (PK), project, condition, age, sex, treatment, response       |
+| `samples`     | one row per biological sample    | `sample` (PK), `subject` (FK), sample_type, time_from_treatment_start |
+| `cell_counts` | one row per (sample, population) | (`sample`, `population`) PK, count                                    |
 
 **Rationale.**
 
@@ -56,6 +56,7 @@ Third-normal-form design with three tables:
 
 **Scaling to hundreds of projects / thousands of samples.** The long, normalized
 layout scales naturally:
+
 - Add a `projects` table and demote `project` to a FK on `subjects` once project
   metadata (sponsor, protocol, dates) matters — the current single-column form is
   a deliberate simplification for one dataset.
@@ -87,13 +88,13 @@ rate; only q-values are used to declare a hit.
 
 Result (993 responder vs 975 non-responder samples):
 
-| population | median resp. | median non-resp. | p-value | q-value (BH) | significant |
-|------------|-------------|------------------|---------|--------------|-------------|
-| b_cell | 9.43 | 9.79 | 5.6e-02 | 1.4e-01 | no |
-| cd8_t_cell | 24.73 | 24.60 | 6.4e-01 | 6.4e-01 | no |
-| **cd4_t_cell** | **30.22** | **29.66** | **1.3e-02** | **6.7e-02** | no |
-| nk_cell | 14.51 | 14.80 | 1.2e-01 | 2.0e-01 | no |
-| monocyte | 19.61 | 19.94 | 1.6e-01 | 2.0e-01 | no |
+| population           | median resp.    | median non-resp. | p-value           | q-value (BH)      | significant |
+| -------------------- | --------------- | ---------------- | ----------------- | ----------------- | ----------- |
+| b_cell               | 9.43            | 9.79             | 5.6e-02           | 1.4e-01           | no          |
+| cd8_t_cell           | 24.73           | 24.60            | 6.4e-01           | 6.4e-01           | no          |
+| **cd4_t_cell** | **30.22** | **29.66**  | **1.3e-02** | **6.7e-02** | no          |
+| nk_cell              | 14.51           | 14.80            | 1.2e-01           | 2.0e-01           | no          |
+| monocyte             | 19.61           | 19.94            | 1.6e-01           | 2.0e-01           | no          |
 
 **CD4 T cells are the leading candidate biomarker**, but the evidence is
 suggestive rather than conclusive. Responders carry a higher CD4 T-cell relative
@@ -112,6 +113,7 @@ is what would settle it.
 — one count per sample — so they are comparable and each sums to the subset
 size. Here every subject contributes exactly one baseline sample (656 samples
 from 656 subjects), so sample- and subject-level counts coincide.
+
 - Samples per project — **prj1: 384, prj3: 272**
 - Samples by response — **responders 331, non-responders 325**
 - Samples by sex — **M 344, F 312**
@@ -127,6 +129,10 @@ frequency table with CSV export, interactive responder-vs-non-responder boxplots
 with the significance table, and the baseline subset breakdown. Because it reads
 `cell_counts.db` live, it always reflects the loaded data.
 
-> **Dashboard link:** runs locally via `make dashboard`. To share a hosted
-> version, deploy `dashboard.py` to Streamlit Community Cloud and paste the URL
-> here.
+> **Live dashboard:**
+> https://cell-count-analysis-scljafbnjai7hhxvybsumd.streamlit.app/
+>
+> Hosted on Streamlit Community Cloud, deployed from this repository's `main`
+> branch. `cell_counts.db` is committed, so the hosted app serves the same data
+> without needing the pipeline to run there. It can also be run locally with
+> `make dashboard`.
